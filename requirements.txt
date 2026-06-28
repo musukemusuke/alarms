@@ -1,0 +1,6 @@
+discord.py==2.7.1
+apscheduler
+python-dotenv
+PyNaCl
+davey
+SQLAlchemy

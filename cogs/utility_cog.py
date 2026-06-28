@@ -1,0 +1,51 @@
+import discord
+from discord.ext import commands
+from discord import app_commands
+from datetime import datetime
+from utils import JST
+
+class UtilityCog(commands.Cog):
+    def __init__(self, bot):
+        self.bot = bot
+
+    @app_commands.command(name="history", description="過去の履歴を表示します")
+    async def alarm_history(self, interaction: discord.Interaction, 
+        query: str = app_commands.Parameter(name="query", default=None)):
+        if not interaction.guild:
+            return await interaction.response.send_message("このコマンドはサーバー内でのみ使用できます。", ephemeral=True)
+            
+        if not self.bot.guild_storage: 
+            return await interaction.response.send_message("ストレージ準備中...", ephemeral=True)
+        guild_storage = self.bot.guild_storage.get_guild_storage(interaction.guild.id)
+        if not guild_storage:
+            return await interaction.response.send_message("このサーバーのストレージが準備されていません。", ephemeral=True)
+            
+        await guild_storage.grant_storage_access(interaction.user)
+        user_history = guild_storage.get_history(user_id=interaction.user.id)
+        
+        if query:
+            q = query.lower()
+            user_history = [h for h in user_history if q in h.get("time", "").lower() or q in h.get("days", "").lower()]
+
+        if not user_history:
+            return await interaction.response.send_message("過去の履歴は見つかりませんでした。", ephemeral=True)
+
+        embed = discord.Embed(title=f"📜 {interaction.user.display_name}さんの履歴", color=discord.Color.light_grey())
+        for h in reversed(user_history[:10]):
+            set_at = datetime.fromisoformat(h['set_at'])
+            ts = int(set_at.timestamp())
+            icon = "🍅" if h.get("category") == "pomodoro" else "⏰"
+            embed.add_field(
+                name=f"{icon} {h['time']} ({h['days']})",
+                value=f"記録日時: <t:{ts}:f> (**<t:{ts}:R>**)",
+                inline=False
+            )
+        await interaction.response.send_message(embed=embed, ephemeral=True)
+
+    @app_commands.command(name="now", description="ボットの現在時刻を確認します")
+    async def show_now(self, interaction: discord.Interaction):
+        now = datetime.now(JST)
+        await interaction.response.send_message(f"🕙 現在のボットの時刻（JST）は `{now.strftime('%H:%M:%S')}` です。", ephemeral=True)
+
+async def setup(bot):
+    await bot.add_cog(UtilityCog(bot))
