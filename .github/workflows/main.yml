@@ -1,0 +1,63 @@
+name: Discord Bot Runner
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+  schedule:
+    - cron: '0 */6 * * *' # 6時間ごとに自動起動
+  workflow_dispatch:      # ボタンで手動起動できるようにする
+
+jobs:
+  run-bot:
+    concurrency:
+      group: discord-bot-runner
+      cancel-in-progress: true
+
+    permissions:
+      actions: write # ワークフローを再起動するために必要
+
+    runs-on: ubuntu-latest
+    timeout-minutes: 360 # GitHub Actionsの制限時間（6時間）
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.10"
+
+    - name: Install FFmpeg
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y ffmpeg
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install --no-cache-dir -r requirements.txt
+
+    - name: Lint with flake8
+      run: |
+        pip install flake8
+        # 構文エラー (E9), 実行時エラーの可能性 (F63, F7, F82) をチェック
+        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+
+    - name: Run Discord Bot
+      env:
+        DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
+        STORAGE_CHANNEL_ID: ${{ secrets.STORAGE_CHANNEL_ID }}
+        GUILD_ID: ${{ secrets.GUILD_ID }}
+      run: |
+        # 5時間55分 (21300秒) 経過したら正常終了させて次のジョブへ繋ぐ
+        timeout 21300s python main.py || echo "Bot session ended to prevent GitHub timeout."
+
+    - name: Trigger next relay run
+      if: success() # 手動キャンセルや致命的なエラー時はリレーせず、正常終了（タイムアウト含む）時のみバトンを繋ぐ
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        gh workflow run "Discord Bot Runner"
