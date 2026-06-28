@@ -8,11 +8,8 @@ class PomodoroCog(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
-    @app_commands.command(name="pomodoro", description="作業と休憩のサイクルを開始します")
-    async def pomodoro(self, interaction, 
-        work_mins: int = app_commands.Parameter(name="work_mins", default=25), 
-        rest_mins: int = app_commands.Parameter(name="rest_mins", default=5), 
-        memo: str = None):
+    @app_commands.command(name="pomodoro", description="作業と休憩のサイクル（ポモドーロ・タイマー）を開始します")
+    async def pomodoro(self, interaction, work_mins: int = 25, rest_mins: int = 5, memo: str = None):
         if self.bot.guild_storage and interaction.guild:
             guild_storage = self.bot.guild_storage.get_guild_storage(interaction.guild.id)
             if guild_storage: await guild_storage.grant_storage_access(interaction.user)

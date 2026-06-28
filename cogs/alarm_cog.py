@@ -16,10 +16,7 @@ class AlarmCog(commands.Cog):
 
     @app_commands.command(name="alarm", description="アラームをセットします")
     @app_commands.autocomplete(day_of_week=day_of_week_autocomplete)
-    async def set_alarm(self, interaction: discord.Interaction, 
-        time_str: str, 
-        memo: str = None, 
-        day_of_week: str = app_commands.Parameter(name="day_of_week", default="毎日")):
+    async def set_alarm(self, interaction: discord.Interaction, time_str: str, memo: str = None, day_of_week: str = "毎日"):
         if self.bot.guild_storage and interaction.guild:
             guild_storage = self.bot.guild_storage.get_guild_storage(interaction.guild.id)
             if guild_storage: await guild_storage.grant_storage_access(interaction.user)
@@ -133,10 +130,9 @@ class AlarmCog(commands.Cog):
         
         await interaction.response.send_message(f"⏰ **現在の予約スケジュール**\n" + "\n".join(lines), ephemeral=True)
 
-    @app_commands.command(name="cancel", description="セットしたアラームを解除します")
+    @app_commands.command(name="cancel", description="セットしたアラームを一覧から選択して解除します")
     @app_commands.autocomplete(alarm_selection=alarm_id_autocomplete)
-    async def cancel_alarm(self, interaction: discord.Interaction, 
-        alarm_selection: str = app_commands.Parameter(name="alarm_selection")):
+    async def cancel_alarm(self, interaction: discord.Interaction, alarm_selection: str):
         try:
             self.bot.scheduler.remove_job(alarm_selection)
             try: self.bot.scheduler.remove_job(f"pre_{alarm_selection}")

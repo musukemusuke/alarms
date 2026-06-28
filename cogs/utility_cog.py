@@ -8,9 +8,9 @@ class UtilityCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @app_commands.command(name="history", description="過去の履歴を表示します")
-    async def alarm_history(self, interaction: discord.Interaction, 
-        query: str = app_commands.Parameter(name="query", default=None)):
+    @app_commands.command(name="history", description="過去の履歴（最新10件）を表示します")
+    @app_commands.describe(query="検索ワード (任意)")
+    async def alarm_history(self, interaction: discord.Interaction, query: str = None):
         if not interaction.guild:
             return await interaction.response.send_message("このコマンドはサーバー内でのみ使用できます。", ephemeral=True)
             
